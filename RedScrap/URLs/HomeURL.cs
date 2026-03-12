@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace RedScraps.Calls;
+namespace RedScraps.URLs;
 
 public static class HomeCall
 {
@@ -116,32 +116,5 @@ public static class HomeCall
         if (after != null) URL.After = after;
 
         return URL.FullUrl;
-    }
-
-  
-    public static void RunTests()
-    {
-        Console.WriteLine("--- Starting Reddit URL Tests ---");
-
-        Test("Basic Valid", () => CreateHomeURL("dotnet", "hot", 50));
-        Test("Full Pagination", () => CreateHomeURL("programming", "top", 100, "year", "t3_12345"));
-        Test("Invalid Sort Error", () => CreateHomeURL("pics", "not_a_sort"));
-        Test("Out of Bounds Limit", () => CreateHomeURL("science", "new", 500));
-        Test("Invalid Time/Sort Combo", () => CreateHomeURL("news", "new", 25, "day"));
-        Test("Default Values", () => CreateHomeURL("funny"));
-    }
-
-
-    private static void Test(string testName, Func<string> action)
-    {
-        try
-        {
-            string result = action();
-            Console.WriteLine($"[PASS] {testName}: {result}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[EXPECTED ERROR] {testName}: {ex.Message}");
-        }
     }
 }

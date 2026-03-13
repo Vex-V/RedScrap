@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-namespace RedScraps.Responses;
+namespace RedScraps.Receive;
 
-public class Comments
+public class CommentsRec
 {
     public class PostInfo
     {

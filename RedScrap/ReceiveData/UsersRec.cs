@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace RedScraps.Responses;
+namespace RedScraps.Receive;
 
-public class UserSubmitted
+public class UserSubmittedRec
 {
     public string? kind { get; set; } 
     public SubmittedData? data { get; set; }
@@ -33,7 +33,7 @@ public class UserSubmitted
     }
 }
 
-public class UserComments
+public class UserCommentsRec
 {
     public string? kind { get; set; }
     public CommentListData? data { get; set; }
@@ -61,7 +61,7 @@ public class UserComments
                 public string? permalink { get; set; }
 
                 [JsonConverter(typeof(RedditReplyConverter))]
-                public Comments.AllComments.CommentListing? replies { get; set; }
+                public CommentsRec.AllComments.CommentListing? replies { get; set; }
             }
         }
     }

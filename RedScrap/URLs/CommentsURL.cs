@@ -1,10 +1,9 @@
 using System.Text;
-
 namespace RedScraps.URLs;
 
-public static class CommentCall
+public static class CommentURL
 {
-    public class CommentUrl
+    public class CommentURLParameters
     {
         public const string BaseUrl = "https://www.reddit.com/r/";
 
@@ -92,7 +91,7 @@ public static class CommentCall
         int? limit = null
     )
     {
-        CommentUrl URL = new();
+        CommentURLParameters URL = new();
 
         URL.Subreddit = subreddit;
         URL.PostId = postId;

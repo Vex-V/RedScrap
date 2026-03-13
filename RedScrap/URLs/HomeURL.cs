@@ -1,11 +1,10 @@
 using System.Text;
-
 namespace RedScraps.URLs;
 
-public static class HomeCall
+public static class HomeURL
 {
    
-    public class HomeUrl
+    public class HomeURLParameters
     {
         public const string BaseUrl = "https://www.reddit.com/r/";
 
@@ -107,7 +106,7 @@ public static class HomeCall
         string? after = null
     )
     {
-        HomeUrl URL = new();
+        HomeURLParameters URL = new();
 
         URL.Subreddit = subreddit;
         if (sort != null) URL.Sort = sort;

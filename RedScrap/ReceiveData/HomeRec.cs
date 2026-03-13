@@ -1,6 +1,6 @@
-namespace RedScraps.Responses;
+namespace RedScraps.Receive;
 
-public class Home
+public class HomeRec
 {
     public string? kind { get; set; }
     public Data? data { get; set; }
@@ -23,6 +23,7 @@ public class Home
                 public string? author { get; set; }
                 public string? permalink { get; set; }
                 public int? num_comments { get; set; }
+                public string? Id { get; set;}
             }
         }
     }

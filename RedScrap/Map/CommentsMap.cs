@@ -15,13 +15,13 @@ internal static class CommentMapper
 
         var result = new CommentSent
         {
-            id = postSource?.id,
-            title = postSource?.title,
-            author = postSource?.author,
-            selftext = postSource?.selftext,
-            subreddit = postSource?.subreddit,
-            num_comments = postSource?.num_comments,
-            permalink = postSource?.permalink,
+            PostID = postSource?.id,
+            Title = postSource?.title,
+            Author = postSource?.author,
+            Selftext = postSource?.selftext,
+            Subreddit = postSource?.subreddit,
+            Num_comments = postSource?.num_comments,
+            Permalink = postSource?.permalink,
             Comments = new List<CommentSent.Comment>()
         };
 
@@ -55,7 +55,7 @@ internal static class CommentMapper
                 {
                     Author = data.author,
                     Body = data.body,
-                    PostID = rootPostId,
+                    CommentID = rootPostId,
                
                     ParentID = isDirectReply ? rootPostId : data.parent_id
                 });

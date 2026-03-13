@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 namespace RedScraps.Receive;
 
-public class CommentsRec
+internal class CommentsRec
 {
     public class PostInfo
     {
@@ -27,6 +27,8 @@ public class CommentsRec
                     public int? num_comments { get; set; }
                     public string? permalink { get; set; }
                     public string? url { get; set; }
+                    public string? id { get; set; }
+
                 }
             }
         }

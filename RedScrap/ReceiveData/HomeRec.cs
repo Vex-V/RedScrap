@@ -1,6 +1,6 @@
 namespace RedScraps.Receive;
 
-public class HomeRec
+internal class HomeRec
 {
     public string? kind { get; set; }
     public Data? data { get; set; }
@@ -19,6 +19,7 @@ public class HomeRec
             public class Child_Data
             {
                 public string? subreddit { get; set; }
+                public string? title { get; set; }
                 public string? selftext { get; set; }
                 public string? author { get; set; }
                 public string? permalink { get; set; }

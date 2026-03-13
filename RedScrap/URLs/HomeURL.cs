@@ -1,7 +1,7 @@
 using System.Text;
 namespace RedScraps.URLs;
 
-public static class HomeURL
+internal static class HomeURL
 {
    
     public class HomeURLParameters

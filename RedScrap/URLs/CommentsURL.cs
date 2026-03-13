@@ -1,7 +1,7 @@
 using System.Text;
 namespace RedScraps.URLs;
 
-public static class CommentURL
+internal static class CommentURL
 {
     public class CommentURLParameters
     {

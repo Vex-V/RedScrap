@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 namespace RedScraps.Receive;
 
-public class RedditReplyConverter : JsonConverter<CommentsRec.AllComments.CommentListing?>
+internal class RedditReplyConverter : JsonConverter<CommentsRec.AllComments.CommentListing?>
 {
     public override CommentsRec.AllComments.CommentListing? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

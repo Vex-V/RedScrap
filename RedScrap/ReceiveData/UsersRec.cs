@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace RedScraps.Receive;
 
-public class UserSubmittedRec
+internal class UserSubmittedRec
 {
     public string? kind { get; set; } 
     public SubmittedData? data { get; set; }
@@ -33,7 +33,7 @@ public class UserSubmittedRec
     }
 }
 
-public class UserCommentsRec
+internal class UserCommentsRec
 {
     public string? kind { get; set; }
     public CommentListData? data { get; set; }

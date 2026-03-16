@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-
+# --- C# Object Structures (Sent Classes) ---
 
 class Post:
     Author: Optional[str]
@@ -18,7 +18,7 @@ class HomeSent:
 
 class Comment:
     Author: Optional[str]
-    CommentID: Optional[str]  
+    CommentID: Optional[str]  # Updated from PostID to CommentID
     ParentID: Optional[str]
     Body: Optional[str]
 
@@ -42,8 +42,11 @@ def get_home(
     after: Optional[str] = None
 ) -> Optional[HomeSent]:
     """
-    Fetches the home page posts for a subreddit. 
-    Returns a HomeSent object with PascalCase properties.
+    Fetches the home page posts for a subreddit.
+    Returns a HomeSent object with subreddit info and a list of posts \n
+    Subreddit is a required argument.
+    Can be sorted with reddits default sort options. 
+    After is used to get posts after a postID 
     """
     ...
 
@@ -55,6 +58,8 @@ def get_comments(
 ) -> Optional[CommentSent]:
     """
     Fetches the comment tree for a post. 
-    Returns a CommentSent object containing a flattened list of PascalCase Comments.
+    Returns a CommentSent object containing a flattened list of Comments. \n
+    Subreddit and post ID are required arguments. 
+    Can be sorted with reddits default sort options. 
     """
     ...

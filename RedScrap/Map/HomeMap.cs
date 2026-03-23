@@ -11,7 +11,6 @@ internal static class PostMapper
        
         var children = source.data?.children ?? new List<HomeRec.Data.Children>();
 
-       
         var firstChild = children.FirstOrDefault()?.data;
         var lastChild = children.LastOrDefault()?.data;
 

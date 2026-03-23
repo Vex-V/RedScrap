@@ -13,8 +13,18 @@ public static class Scrappers
 {
     private static readonly HttpClient client = new HttpClient();
     private static readonly JsonSerializerOptions _options = new() { PropertyNameCaseInsensitive = true };
-    public static async Task Main(string[] args)
+
+
+    public static async Task Main()
     {
+        string URL1 = UserURL.CreateUserURL("testuser","comments");
+        string URL2 = UserURL.CreateUserURL("testuser","comments","hot",100);
+        //string URL3 = UserURL.CreateUserURL("testuser","comments","hot",100,"hour");
+        string URL4 = UserURL.CreateUserURL("testuser","comments","top",100,"hour");
+        Console.WriteLine(URL1);
+        Console.WriteLine(URL2);
+        //Console.WriteLine(URL3);
+        Console.WriteLine(URL4);
 
     }
 

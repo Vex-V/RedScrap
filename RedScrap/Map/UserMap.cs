@@ -41,9 +41,29 @@ internal static class UserMapper
 
         var children = source.data?.children ?? new List<UserCommentsRec.CommentListData.CommentChild>();
 
-       
         var firstChild = children.FirstOrDefault()?.data;
         var lastChild = children.LastOrDefault()?.data;
-        return
+
+        return new UserCommentsSent
+        {
+            Username = firstChild?.author ?? string.Empty,
+            FirstID = firstChild?.id ?? string.Empty,
+            LastID = firstChild?.id ?? string.Empty,
+            TotalComments = children.Count,
+
+            Comments = children.Select(c => new UserCommentsSent.Comment
+            {
+                Author = c.data?.author,
+                CommentID = c.data?.id,
+                Subreddit = c.data?.subreddit,
+                Body = c.data?.body,
+                ParentID = c.data?.parent_id,
+                PostID = c.data?.link_id,
+                PostTitle = c.data?.link_title,
+                Link = c.data?.permalink,
+            }).ToList()
+
+            
+        };
     }
 }

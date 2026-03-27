@@ -20,7 +20,7 @@ internal static class UserMapper
             Username = firstChild?.author ?? string.Empty,
             FirstID = firstChild?.id ?? string.Empty,
             LastID = lastChild?.id ?? string.Empty,
-            TotalPosts = children.Count,
+            TotalCount = children.Count,
 
             Posts = children.Select(c => new UserSubmittedSent.Post
             {
@@ -49,7 +49,7 @@ internal static class UserMapper
             Username = firstChild?.author ?? string.Empty,
             FirstID = firstChild?.id ?? string.Empty,
             LastID = firstChild?.id ?? string.Empty,
-            TotalComments = children.Count,
+            TotalCount = children.Count,
 
             Comments = children.Select(c => new UserCommentsSent.Comment
             {

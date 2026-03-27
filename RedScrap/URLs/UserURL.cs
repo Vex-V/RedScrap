@@ -15,7 +15,7 @@ internal static class UserURL
         private string _type = "";
         private static readonly HashSet<string> ValidSorts = ["best", "top", "hot", "controversial", "new"];
         private static readonly HashSet<string> ValidTimes = ["hour", "day", "week", "month", "year", "all"];
-        private static readonly HashSet<string> ValidTypes =["submitted", "comments", "overview", "gilded"];
+        private static readonly HashSet<string> ValidTypes =["submitted", "comments"];
         
         public string User
         {

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using RedScraps.URLs;
 using RedScraps.Receive;
 using RedScraps.Sent;
@@ -17,16 +14,103 @@ public static class Scrappers
 
     public static async Task Main()
     {
-        string URL1 = UserURL.CreateUserURL("testuser","comments");
-        string URL2 = UserURL.CreateUserURL("testuser","comments","hot",100);
-        //string URL3 = UserURL.CreateUserURL("testuser","comments","hot",100,"hour");
-        string URL4 = UserURL.CreateUserURL("testuser","comments","top",100,"hour");
-        Console.WriteLine(URL1);
-        Console.WriteLine(URL2);
-        //Console.WriteLine(URL3);
-        Console.WriteLine(URL4);
+        IUserData? scrap_real_user_comments = await ScrapUserData("Xadartt", "comments");
+        Console.WriteLine(scrap_real_user_comments);
+        IUserData? scrap_real_user_submitted = await ScrapUserData("Xadartt", "submitted");
+        Console.WriteLine(scrap_real_user_submitted);
+
 
     }
+
+
+
+    public static async Task<IUserData?> ScrapUserData(
+        string user,
+        string type,
+        string? sort = null, 
+        int? limit = null, 
+        string? time = null, 
+        string? after = null)
+    {   
+        
+        try
+        {   
+            Console.WriteLine($"[1/5] Building URL for u/{user}...");
+            string targetUrl = UserURL.CreateUserURL(user,type,sort,limit,time,after);
+            Console.WriteLine($"      URL -> {targetUrl}");
+
+            Console.WriteLine("[2/5] Preparing HTTP request headers...");
+            if (!client.DefaultRequestHeaders.Contains("User-Agent"))
+            {
+                client.DefaultRequestHeaders.Add("User-Agent", "RedScrapsBot/1.0 (Learning Project)");
+            }
+            Console.WriteLine("[3/5] Sending GET request to Reddit...");
+            HttpResponseMessage response = await client.GetAsync(targetUrl);
+        
+            response.EnsureSuccessStatusCode(); 
+
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Success! Received {jsonResponse.Length} bytes of JSON.");
+
+            if (type == "comments")
+            {
+                Console.WriteLine("[4/5] Deserializing JSON into UserCommentsRec...");
+                var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                UserCommentsRec? receivedData = JsonSerializer.Deserialize<UserCommentsRec>(jsonResponse, jsonOptions);
+
+                if (receivedData == null)
+                {
+                    Console.WriteLine("      [ERROR] Deserialization resulted in null.");
+                    return null;
+                }
+
+                Console.WriteLine("[5/5] Mapping raw data to HomeSent clean class...");
+                UserCommentsSent cleanData = UserMapper.MapToUserComSent(receivedData);
+                Console.WriteLine("      Mapping complete!");
+
+                return cleanData;
+            }
+            else if (type == "submitted")
+            {
+                Console.WriteLine("[4/5] Deserializing JSON into UserSubmittedRec...");
+                var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                UserSubmittedRec? receivedData = JsonSerializer.Deserialize<UserSubmittedRec>(jsonResponse, jsonOptions);
+
+                if (receivedData == null)
+                {
+                    Console.WriteLine("   [ERROR] Deserialization resulted in null.");
+                    return null;
+                }
+
+                Console.WriteLine("[5/5] Mapping raw data to UserSubSent class...");
+                UserSubmittedSent cleanData = UserMapper.MapToUserSubSent(receivedData);
+                Console.WriteLine("      Mapping complete!");
+
+                return cleanData;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        catch (HttpRequestException e)
+        {
+            Console.WriteLine($"\n[HTTP ERROR] {e.Message}");
+            return null;
+        }
+        catch (JsonException e)
+        {
+            Console.WriteLine($"\n[JSON ERROR] {e.Message}");
+            return null;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"\n[GENERAL ERROR] {e.Message}");
+            return null;
+        }
+    }
+
+
 
     public static async Task<HomeSent?> ScrapHome(
         string subreddit, 

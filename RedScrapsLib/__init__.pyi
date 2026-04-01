@@ -1,26 +1,47 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
-# --- C# Object Structures (Sent Classes) ---
+# ----------------------------
+# Initialization
+# ----------------------------
 
-class Post:
+def init(user_agent: Optional[str] = None, debug: bool = False) -> None:
+    """
+    Initialize the underlying Scraper instance.
+    Must be called before using any other function.
+    """
+    ...
+
+
+# ----------------------------
+# HomeSent
+# ----------------------------
+
+class HomePost:
     Author: Optional[str]
     PostID: Optional[str]
     SelfText: Optional[str]
     Title: Optional[str]
     Link: Optional[str]
 
+
 class HomeSent:
     Subreddit: str
     FirstID: str
     LastID: str
     TotalPosts: int
-    Posts: Optional[List[Post]]
+    Posts: Optional[List[HomePost]]
 
-class Comment:
+
+# ----------------------------
+# CommentSent
+# ----------------------------
+
+class CommentNode:
     Author: Optional[str]
-    CommentID: Optional[str]  # Updated from PostID to CommentID
+    CommentID: Optional[str]
     ParentID: Optional[str]
     Body: Optional[str]
+
 
 class CommentSent:
     PostID: Optional[str]
@@ -30,36 +51,103 @@ class CommentSent:
     Subreddit: Optional[str]
     Num_comments: Optional[int]
     Permalink: Optional[str]
-    Comments: Optional[List[Comment]]
+    Comments: Optional[List[CommentNode]]
 
-# --- Wrapper Function Signatures ---
+
+# ----------------------------
+# IUserData (interface base)
+# ----------------------------
+
+class IUserData:
+    Username: str
+    FirstID: str
+    LastID: str
+    TotalCount: int
+
+
+# ----------------------------
+# UserSubmittedSent
+# ----------------------------
+
+class UserSubmittedPost:
+    PostID: Optional[str]
+    Title: Optional[str]
+    Author: Optional[str]
+    Subreddit: Optional[str]
+    SelfText: Optional[str]
+    Link: Optional[str]
+    Upvotes: Optional[int]
+    CommentCount: Optional[int]
+    CreatedUtc: float
+
+
+class UserSubmittedSent(IUserData):
+    Posts: Optional[List[UserSubmittedPost]]
+
+
+# ----------------------------
+# UserCommentsSent
+# ----------------------------
+
+class UserComment:
+    CommentID: Optional[str]
+    Author: Optional[str]
+    Subreddit: Optional[str]
+    Body: Optional[str]
+    ParentID: Optional[str]
+    PostID: Optional[str]
+    PostTitle: Optional[str]
+    Link: Optional[str]
+    Upvotes: Optional[int]
+    CreatedUtc: float
+
+
+class UserCommentsSent(IUserData):
+    Comments: Optional[List[UserComment]]
+
+
+# ----------------------------
+# Wrapper functions
+# ----------------------------
 
 def get_home(
-    subreddit: str, 
-    sort: str = "hot", 
-    limit: int = 100, 
-    time: Optional[str] = None, 
+    subreddit: str,
+    sort: str = "hot",
+    limit: int = 100,
+    time: Optional[str] = None,
     after: Optional[str] = None
 ) -> Optional[HomeSent]:
     """
-    Fetches the home page posts for a subreddit.
-    Returns a HomeSent object with subreddit info and a list of posts \n
-    Subreddit is a required argument.
-    Can be sorted with reddits default sort options. 
-    After is used to get posts after a postID 
+    Fetch subreddit posts.
     """
     ...
 
+
 def get_comments(
-    subreddit: str, 
-    post_id: str, 
-    sort: str = "confidence", 
+    subreddit: str,
+    post_id: str,
+    sort: str = "confidence",
     limit: int = 100
 ) -> Optional[CommentSent]:
     """
-    Fetches the comment tree for a post. 
-    Returns a CommentSent object containing a flattened list of Comments. \n
-    Subreddit and post ID are required arguments. 
-    Can be sorted with reddits default sort options. 
+    Fetch flattened comments for a post.
+    """
+    ...
+
+
+def get_user_data(
+    user: str,
+    type: str,
+    sort: Optional[str] = None,
+    limit: Optional[int] = None,
+    time: Optional[str] = None,
+    after: Optional[str] = None
+) -> Optional[Union[UserSubmittedSent, UserCommentsSent]]:
+    """
+    Fetch user data.
+
+    type:
+        - "comments" → UserCommentsSent
+        - "submitted" → UserSubmittedSent
     """
     ...

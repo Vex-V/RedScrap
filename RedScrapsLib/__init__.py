@@ -2,16 +2,15 @@ import os
 import sys
 from pythonnet import load
 
-
+# Load .NET runtime
 try:
     load("coreclr")
 except Exception:
-    
     pass
 
 import clr
 
-
+# Resolve DLL path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 dll_name = "RedScrap.dll"
 dll_path = os.path.join(current_dir, dll_name)
@@ -20,41 +19,86 @@ if current_dir not in sys.path:
     sys.path.append(current_dir)
 
 if not os.path.exists(dll_path):
-    raise FileNotFoundError(f"Missing DLL: {dll_path}\n"
-                            "Ensure the DLL and its .deps.json are in the same folder.")
-
+    raise FileNotFoundError(
+        f"Missing DLL: {dll_path}\n"
+        "Ensure the DLL and its .deps.json are in the same folder."
+    )
 
 clr.AddReference(dll_path)
 
+# Import correct class
 try:
-
-    from RedScraps import Scrappers
+    from RedScraps import Scraper
 except ImportError as e:
-    raise ImportError(f"Could not find namespace 'RedScraps' in {dll_name}. "
-                     "Check your C# code's 'public' modifiers and namespace string.") from e
+    raise ImportError(
+        f"Could not find class 'Scraper' in namespace 'RedScraps' in {dll_name}."
+    ) from e
 
+
+# ----------------------------
+# Internal instance (singleton)
+# ----------------------------
+_scraper_instance = None
+
+
+def init(user_agent=None, debug=False):
+    """
+    Initialize the Scraper instance.
+    
+    Must be called before using any other function.
+    """
+    global _scraper_instance
+    _scraper_instance = Scraper(user_agent, debug)
+
+
+def _ensure_initialized():
+    if _scraper_instance is None:
+        raise RuntimeError(
+            "Scraper not initialized. Call init(user_agent, debug) first."
+        )
+
+
+# ----------------------------
+# Wrapper functions
+# ----------------------------
 
 def get_home(subreddit, sort="hot", limit=100, time=None, after=None):
     """
-    Fetches the home page posts for a subreddit.
-    Returns a C# HomeSent object or None if it fails.
+    Fetch subreddit posts.
+    Returns HomeSent or None.
     """
     try:
-
-        task = Scrappers.ScrapHome(subreddit, sort, limit, time, after)
-        return task.Result # Blocks until the C# Task completes
+        _ensure_initialized()
+        task = _scraper_instance.ScrapHome(subreddit, sort, limit, time, after)
+        return task.Result
     except Exception as e:
         print(f"RedScraps Wrapper Error [get_home]: {e}")
         return None
 
+
 def get_comments(subreddit, post_id, sort="confidence", limit=100):
     """
-    Fetches the flattened comment tree for a specific post.
-    Returns a C# CommentSent object or None if it fails.
+    Fetch post comments.
+    Returns CommentSent or None.
     """
     try:
-        task = Scrappers.ScrapComments(subreddit, post_id, sort, limit)
+        _ensure_initialized()
+        task = _scraper_instance.ScrapComments(subreddit, post_id, sort, limit)
         return task.Result
     except Exception as e:
         print(f"RedScraps Wrapper Error [get_comments]: {e}")
+        return None
+
+
+def get_user_data(user, type, sort=None, limit=None, time=None, after=None):
+    """
+    Fetch user data (comments or submitted).
+    Returns IUserData or None.
+    """
+    try:
+        _ensure_initialized()
+        task = _scraper_instance.ScrapUserData(user, type, sort, limit, time, after)
+        return task.Result
+    except Exception as e:
+        print(f"RedScraps Wrapper Error [get_user_data]: {e}")
         return None

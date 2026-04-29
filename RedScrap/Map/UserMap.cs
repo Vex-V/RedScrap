@@ -30,7 +30,8 @@ internal static class UserMapper
                 SelfText = c.data?.selftext,
                 Link = c.data?.permalink,
                 Upvotes = c.data?.ups,
-                CommentCount = c.data?.num_comments
+                CommentCount = c.data?.num_comments,
+                CreatedUtc = c.data?.created_utc ?? 0.0
 
             }).ToList()
         };
@@ -48,7 +49,7 @@ internal static class UserMapper
         {
             Username = firstChild?.author ?? string.Empty,
             FirstID = firstChild?.id ?? string.Empty,
-            LastID = firstChild?.id ?? string.Empty,
+            LastID = lastChild?.id ?? string.Empty,
             TotalCount = children.Count,
 
             Comments = children.Select(c => new UserCommentsSent.Comment
@@ -61,6 +62,8 @@ internal static class UserMapper
                 PostID = c.data?.link_id,
                 PostTitle = c.data?.link_title,
                 Link = c.data?.permalink,
+                Upvotes = c.data?.ups,
+                CreatedUtc = c.data?.created_utc ?? 0.0
             }).ToList()
 
             

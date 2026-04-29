@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using RedScraps.URLs;
@@ -20,10 +19,12 @@ public class Scraper
     {
         _debug = debug ?? false;
 
+
         userAgent ??= "RedScrapsBot";
 
         _client = new HttpClient();
         _client.DefaultRequestHeaders.Add("User-Agent", userAgent);
+
 
         _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     }
@@ -37,63 +38,61 @@ public class Scraper
         }
     }
 
-    public async Task<IUserData?> ScrapUserData(
+    private static void CheckResponseStatus(HttpResponseMessage response)
+    {
+        if ((int)response.StatusCode == 429)
+        {
+            double wait = response.Headers.RetryAfter?.Delta?.TotalSeconds ?? 60.0;
+            throw new HttpRequestException($"RateLimited:{wait}");
+        }
+        response.EnsureSuccessStatusCode();
+    }
+
+
+    public async Task<UserCommentsSent?> ScrapUserComments(
         string user,
-        string type,
         string? sort = null, 
         int? limit = null, 
         string? time = null, 
         string? after = null)
     {   
         try
-        {   
+        {     
+            string type = "comments";
             LogDebug($"[1/5] Building URL for u/{user}...");
             string targetUrl = UserURL.CreateUserURL(user, type, sort, limit, time, after);
             LogDebug($"      URL -> {targetUrl}");
 
+
             LogDebug("[2/5] Sending GET request to Reddit...");
             HttpResponseMessage response = await _client.GetAsync(targetUrl);
-            response.EnsureSuccessStatusCode(); 
+            CheckResponseStatus(response);
+
 
             string jsonResponse = await response.Content.ReadAsStringAsync();
             LogDebug($"      Success! Received {jsonResponse.Length} bytes of JSON.");
 
-            if (type == "comments")
+            LogDebug("[3/5] Deserializing JSON into UserCommentsRec...");
+            UserCommentsRec? receivedData = JsonSerializer.Deserialize<UserCommentsRec>(jsonResponse, _options);
+
+            if (receivedData == null)
             {
-                LogDebug("[3/5] Deserializing JSON into UserCommentsRec...");
-                UserCommentsRec? receivedData = JsonSerializer.Deserialize<UserCommentsRec>(jsonResponse, _options);
-
-                if (receivedData == null)
-                {
-                    LogDebug("      [ERROR] Deserialization resulted in null.");
-                    return null;
-                }
-
-                LogDebug("[4/5] Mapping raw data to HomeSent clean class...");
-                UserCommentsSent cleanData = UserMapper.MapToUserComSent(receivedData);
-                LogDebug("      Mapping complete!");
-
-                return cleanData;
+                LogDebug("      [ERROR] Deserialization resulted in null.");
+                return null;
             }
-            else if (type == "submitted")
-            {
-                LogDebug("[3/5] Deserializing JSON into UserSubmittedRec...");
-                UserSubmittedRec? receivedData = JsonSerializer.Deserialize<UserSubmittedRec>(jsonResponse, _options);
 
-                if (receivedData == null)
-                {
-                    LogDebug("   [ERROR] Deserialization resulted in null.");
-                    return null;
-                }
+            LogDebug("[4/5] Mapping raw data to HomeSent clean class...");
+            UserCommentsSent cleanData = UserMapper.MapToUserComSent(receivedData);
+            LogDebug("      Mapping complete!");
 
-                LogDebug("[4/5] Mapping raw data to UserSubSent class...");
-                UserSubmittedSent cleanData = UserMapper.MapToUserSubSent(receivedData);
-                LogDebug("      Mapping complete!");
 
-                return cleanData;
-            }
-            
-            return null;
+            return cleanData;
+
+
+        }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("RateLimited:"))
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -102,6 +101,56 @@ public class Scraper
         }
     }
 
+
+
+    public async Task<UserSubmittedSent?> ScrapUserData(
+        string user,
+        
+        string? sort = null, 
+        int? limit = null, 
+        string? time = null, 
+        string? after = null)
+    {   
+        try
+        {   
+            string type = "submitted";
+            LogDebug($"[1/5] Building URL for u/{user}...");
+            string targetUrl = UserURL.CreateUserURL(user, type, sort, limit, time, after);
+            LogDebug($"      URL -> {targetUrl}");
+
+            LogDebug("[2/5] Sending GET request to Reddit...");
+            HttpResponseMessage response = await _client.GetAsync(targetUrl);
+            CheckResponseStatus(response);
+
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            LogDebug($"      Success! Received {jsonResponse.Length} bytes of JSON.");
+
+            LogDebug("[3/5] Deserializing JSON into UserSubmittedRec...");
+            UserSubmittedRec? receivedData = JsonSerializer.Deserialize<UserSubmittedRec>(jsonResponse, _options);
+
+            if (receivedData == null)
+            {
+                LogDebug("   [ERROR] Deserialization resulted in null.");
+                return null;
+            }
+
+            LogDebug("[4/5] Mapping raw data to UserSubSent class...");
+            UserSubmittedSent cleanData = UserMapper.MapToUserSubSent(receivedData);
+            LogDebug("      Mapping complete!");
+
+            return cleanData;
+
+        }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("RateLimited:"))
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"\n[{ex.GetType().Name}] {ex.Message}");
+            return null;
+        }
+    }
     public async Task<HomeSent?> ScrapHome(
         string subreddit, 
         string? sort = null, 
@@ -117,8 +166,8 @@ public class Scraper
 
             LogDebug("[2/5] Sending GET request to Reddit...");
             HttpResponseMessage response = await _client.GetAsync(targetUrl);
-            response.EnsureSuccessStatusCode(); 
-            
+            CheckResponseStatus(response);
+
             string jsonResponse = await response.Content.ReadAsStringAsync();
             LogDebug($"      Success! Received {jsonResponse.Length} bytes of JSON.");
 
@@ -136,6 +185,10 @@ public class Scraper
             LogDebug("      Mapping complete!");
 
             return cleanData;
+        }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("RateLimited:"))
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -157,7 +210,9 @@ public class Scraper
             LogDebug($"      URL -> {targetUrl}");
 
             LogDebug("[2/5] Fetching JSON array from Reddit...");
-            string jsonResponse = await _client.GetStringAsync(targetUrl);
+            HttpResponseMessage response = await _client.GetAsync(targetUrl);
+            CheckResponseStatus(response);
+            string jsonResponse = await response.Content.ReadAsStringAsync();
             LogDebug($"      Received {jsonResponse.Length} bytes.");
 
             LogDebug("[3/5] Parsing JSON array components...");
@@ -186,6 +241,10 @@ public class Scraper
 
             return cleanComments;
         }
+        catch (HttpRequestException ex) when (ex.Message.StartsWith("RateLimited:"))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             LogDebug($"\n[{ex.GetType().Name}] {ex.Message}");
@@ -196,137 +255,142 @@ public class Scraper
 
 class Program
 {
+    
     public static async Task Main(string[] args)
-    {   
+    {
         /*
-        Console.WriteLine("Initializing Scraper...");
-        // Testing the default constructor behavior (debug ON to see your internal logs)
-        var scraper = new Scraper(debug: true); 
+        Scraper scraper = new Scraper(userAgent: "RedScrapsTestBot/1.0", debug: true);
 
-        // ==========================================
-        // TEST 1: ScrapHome
-        // ==========================================
-        Console.WriteLine("\n\n==========================================");
-        Console.WriteLine("TEST 1: ScrapHome (r/programming)");
-        Console.WriteLine("==========================================");
+        Console.WriteLine("\n==================================================");
+        Console.WriteLine("TEST 1: ScrapHome (Subreddit: csharp)");
+        Console.WriteLine("==================================================");
         
-        var homeData = await scraper.ScrapHome("programming", limit: 3);
-        
+        var homeData = await scraper.ScrapHome("csharp", limit: 5);
+        string? firstPostId = null;
+
         if (homeData != null)
         {
-            Console.WriteLine($"\n[HOME DATA RESULTS]");
-            Console.WriteLine($"Subreddit:  {homeData.Subreddit}");
-            Console.WriteLine($"TotalPosts: {homeData.TotalPosts}");
-            Console.WriteLine($"FirstID:    {homeData.FirstID}");
-            Console.WriteLine($"LastID:     {homeData.LastID}");
-
-            if (homeData.Posts != null && homeData.Posts.Any())
+            Console.WriteLine($"\n--- SUCCESS: ScrapHome ---");
+            Console.WriteLine($"Subreddit: {homeData.Subreddit}");
+            Console.WriteLine($"Total Posts Fetched: {homeData.TotalPosts}");
+            
+            if (homeData.Posts != null && homeData.Posts.Count > 0)
             {
-                Console.WriteLine("\n--- First 2 Posts ---");
-                foreach (var post in homeData.Posts.Take(2))
+                // Save the first PostID to dynamically test ScrapComments next
+                firstPostId = homeData.Posts[0].PostID; 
+                
+                foreach (var post in homeData.Posts)
                 {
-                    Console.WriteLine($"Title:  {post.Title}");
-                    Console.WriteLine($"Author: {post.Author}");
-                    Console.WriteLine($"PostID: {post.PostID}");
-                    Console.WriteLine($"Link:   {post.Link}");
-                    Console.WriteLine("---------------------");
+                    Console.WriteLine($" - [{post.PostID}] {post.Title} (by u/{post.Author})");
                 }
             }
         }
+        else
+        {
+            Console.WriteLine("Failed to fetch Home data.");
+        }
 
-        // ==========================================
-        // TEST 2: ScrapComments
-        // ==========================================
-        Console.WriteLine("\n\n==========================================");
+
+        Console.WriteLine("\n==================================================");
         Console.WriteLine("TEST 2: ScrapComments");
-        Console.WriteLine("==========================================");
+        Console.WriteLine("==================================================");
         
-        // REPLACE "POST_ID_HERE" WITH A REAL POST ID TO TEST PROPERLY
-        string testPostId = "1s6b9zt"; 
-        var commentData = await scraper.ScrapComments("programming", testPostId, limit: 5);
-
-        if (commentData != null)
+        if (!string.IsNullOrEmpty(firstPostId))
         {
-            Console.WriteLine($"\n[COMMENT DATA RESULTS]");
-            Console.WriteLine($"Post Title:   {commentData.Title}");
-            Console.WriteLine($"Post Author:  {commentData.Author}");
-            Console.WriteLine($"Total Comms:  {commentData.Num_comments}");
-            Console.WriteLine($"Permalink:    {commentData.Permalink}");
+            Console.WriteLine($"Fetching comments for dynamic Post ID: {firstPostId} from r/csharp...");
+            var commentData = await scraper.ScrapComments("csharp", firstPostId, limit: 5);
 
-            if (commentData.Comments != null && commentData.Comments.Any())
+            if (commentData != null)
             {
-                Console.WriteLine("\n--- First 3 Comments ---");
-                foreach (var comment in commentData.Comments.Take(3))
+                Console.WriteLine($"\n--- SUCCESS: ScrapComments ---");
+                Console.WriteLine($"Post Title: {commentData.Title}");
+                Console.WriteLine($"Reported Comments: {commentData.Num_comments}");
+                Console.WriteLine($"Comments Flattened: {commentData.Comments?.Count ?? 0}");
+
+                if (commentData.Comments != null)
                 {
-                    Console.WriteLine($"Author: {comment.Author}");
-                    Console.WriteLine($"Body:   {(comment.Body?.Length > 50 ? comment.Body.Substring(0, 50) + "..." : comment.Body)}");
-                    Console.WriteLine($"ComID:  {comment.CommentID} | ParentID: {comment.ParentID}");
-                    Console.WriteLine("---------------------");
+                    // Print up to 3 comments to keep the console output clean
+                    for (int i = 0; i < Math.Min(3, commentData.Comments.Count); i++)
+                    {
+                        var comment = commentData.Comments[i];
+                        
+                        // Truncate long comment bodies
+                        string snippet = comment.Body?.Length > 60 
+                            ? comment.Body.Substring(0, 57) + "..." 
+                            : comment.Body ?? "";
+                            
+                        Console.WriteLine($" - [{comment.CommentID}] u/{comment.Author}: {snippet}");
+                    }
                 }
             }
+            else
+            {
+                Console.WriteLine("Failed to fetch Comment data.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Skipping comment test because no Post ID was successfully fetched in Test 1.");
         }
 
-        // ==========================================
-        // TEST 3: ScrapUserData (Submitted)
-        // ==========================================
-        Console.WriteLine("\n\n==========================================");
-        Console.WriteLine("TEST 3: ScrapUserData (User Posts)");
-        Console.WriteLine("==========================================");
+
+        Console.WriteLine("\n==================================================");
+        Console.WriteLine("TEST 3: ScrapUserData (User submissions for u/spez)");
+        Console.WriteLine("==================================================");
         
-        // Using a well-known account for guaranteed data
-        var userSubData = await scraper.ScrapUserData("spez", "submitted", limit: 3);
-
-        // Pattern matching to safely cast IUserData to UserSubmittedSent
-        if (userSubData is UserSubmittedSent subSent)
+        var userSubData = await scraper.ScrapUserData("spez", limit: 3);
+        
+        if (userSubData != null)
         {
-            Console.WriteLine($"\n[USER SUBMITTED RESULTS]");
-            Console.WriteLine($"Username:   {subSent.Username}");
-            Console.WriteLine($"TotalCount: {subSent.TotalCount}");
+            Console.WriteLine($"\n--- SUCCESS: ScrapUserData ---");
+            Console.WriteLine($"Username: {userSubData.Username}");
+            Console.WriteLine($"Total Submissions Fetched: {userSubData.TotalCount}");
 
-            if (subSent.Posts != null && subSent.Posts.Any())
+            if (userSubData.Posts != null)
             {
-                Console.WriteLine("\n--- First 2 User Posts ---");
-                foreach (var post in subSent.Posts.Take(2))
+                foreach (var post in userSubData.Posts)
                 {
-                    Console.WriteLine($"Title: {post.Title}");
-                    Console.WriteLine($"Sub:   r/{post.Subreddit}");
-                    Console.WriteLine($"Score: {post.Upvotes}");
-                    Console.WriteLine("---------------------");
+                    Console.WriteLine($" - [r/{post.Subreddit}] {post.Title} ({post.Upvotes} upvotes)");
                 }
             }
         }
-
-        // ==========================================
-        // TEST 4: ScrapUserData (Comments)
-        // ==========================================
-        Console.WriteLine("\n\n==========================================");
-        Console.WriteLine("TEST 4: ScrapUserData (User Comments)");
-        Console.WriteLine("==========================================");
-
-        var userComData = await scraper.ScrapUserData("spez", "comments", limit: 3);
-
-        // Pattern matching to safely cast IUserData to UserCommentsSent
-        if (userComData is UserCommentsSent comSent)
+        else
         {
-            Console.WriteLine($"\n[USER COMMENTS RESULTS]");
-            Console.WriteLine($"Username:   {comSent.Username}");
-            Console.WriteLine($"TotalCount: {comSent.TotalCount}");
+            Console.WriteLine("Failed to fetch User Submitted data.");
+        }
 
-            if (comSent.Comments != null && comSent.Comments.Any())
+
+        Console.WriteLine("\n==================================================");
+        Console.WriteLine("TEST 4: ScrapUserComments (User comments for u/spez)");
+        Console.WriteLine("==================================================");
+        
+        var userComData = await scraper.ScrapUserComments("spez", limit: 3);
+        
+        if (userComData != null)
+        {
+            Console.WriteLine($"\n--- SUCCESS: ScrapUserComments ---");
+            Console.WriteLine($"Username: {userComData.Username}");
+            Console.WriteLine($"Total Comments Fetched: {userComData.TotalCount}");
+
+            if (userComData.Comments != null)
             {
-                Console.WriteLine("\n--- First 2 User Comments ---");
-                foreach (var comment in comSent.Comments.Take(2))
+                foreach (var comment in userComData.Comments)
                 {
-                    Console.WriteLine($"Sub:   r/{comment.Subreddit}");
-                    Console.WriteLine($"Post:  {comment.PostTitle}");
-                    Console.WriteLine($"Body:  {(comment.Body?.Length > 50 ? comment.Body.Substring(0, 50) + "..." : comment.Body)}");
-                    Console.WriteLine("---------------------");
+                    string snippet = comment.Body?.Length > 60 
+                        ? comment.Body.Substring(0, 57) + "..." 
+                        : comment.Body ?? "";
+                        
+                    Console.WriteLine($" - [r/{comment.Subreddit}] on '{comment.PostTitle}': {snippet}");
                 }
             }
         }
-
-        Console.WriteLine("\nAll tests complete!");
+        else
+        {
+            Console.WriteLine("Failed to fetch User Comments data.");
+        }
+        Console.WriteLine("\nAll tests completed.");
         */
+        await Task.CompletedTask;
     }
     
 }

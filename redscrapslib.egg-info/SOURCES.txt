@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+setup.py
+RedScrapsLib/RedScrap.deps.json
+RedScrapsLib/RedScrap.dll
+RedScrapsLib/RedScrap.runtimeconfig.json
+RedScrapsLib/__init__.py
+RedScrapsLib/__init__.pyi
+RedScrapsLib/py.typed
+redscrapslib.egg-info/PKG-INFO
+redscrapslib.egg-info/SOURCES.txt
+redscrapslib.egg-info/dependency_links.txt
+redscrapslib.egg-info/requires.txt
+redscrapslib.egg-info/top_level.txt
+tests/test.py

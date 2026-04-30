@@ -5,7 +5,7 @@ A Python library for scraping Reddit data (posts, comments, user activity) witho
 ## Requirements
 
 - Python 3.10+
-- Windows x64
+- Windows x64 **or** macOS 12+ (Apple Silicon and Intel)
 - [.NET 9 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) — must be installed separately; pip cannot install it
 
 ## Installation

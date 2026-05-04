@@ -9,7 +9,7 @@ try:
 except Exception:
     pass
 
-import clr
+import clr  # noqa: F401 — side-effect import; registers .NET import hooks
 
 # Resolve DLL path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +25,8 @@ if not os.path.exists(dll_path):
         "Ensure the DLL and its .deps.json are in the same folder."
     )
 
-clr.AddReference(dll_path)
+from System.Reflection import Assembly  # type: ignore[import]
+Assembly.LoadFrom(dll_path)
 
 try:
     from RedScraps import Scraper

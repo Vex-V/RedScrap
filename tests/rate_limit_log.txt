@@ -1,0 +1,13 @@
+Request  102 | rate limited after 102 requests | waited 60s
+Request  202 | rate limited after 100 requests | waited 480s
+Request  302 | rate limited after 100 requests | waited 480s
+Request  402 | rate limited after 100 requests | waited 480s
+Request  502 | rate limited after 100 requests | waited 420s
+Request  602 | rate limited after 100 requests | waited 540s
+Request  702 | rate limited after 100 requests | waited 480s
+Request  802 | rate limited after 100 requests | waited 480s
+Request  902 | rate limited after 100 requests | waited 540s
+
+Total requests : 1000
+Rate limit hits: 66
+Total wait time: 3960s

@@ -1,11 +1,19 @@
 # RedScrapsLib/__init__.pyi
 
-from typing import List, Optional, Protocol, TypedDict
+from http.cookiejar import CookieJar
+from typing import List, Optional, Protocol, TypedDict, Union
 
 # --- Wrapper Functions ---
 
-def init(user_agent: Optional[str] = ..., debug: bool = ...) -> None:
-    """Initialize the underlying .NET Scraper instance."""
+def init(
+    user_agent: Optional[str] = ...,
+    debug: bool = ...,
+    cookies: Optional[Union[dict[str, str], CookieJar]] = ...,
+) -> None:
+    """Initialize the underlying .NET Scraper instance.
+
+    cookies accepts either a plain dict or a CookieJar (e.g. from browser_cookie3).
+    """
     ...
 
 class SessionStats(TypedDict):

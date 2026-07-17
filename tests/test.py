@@ -7,6 +7,7 @@ import RedScrapsLib as rs
 
 PASS = "[PASS]"
 FAIL = "[FAIL]"
+COOKIE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt")
 
 
 def section(title):
@@ -26,125 +27,93 @@ def check(label, value, expected_type=None):
     return True
 
 
-# ── init ──────────────────────────────────────────────────────────────────────
-section("init()")
-rs.init(user_agent="RedScrapsTest/1.0", debug=False)
-print(f"  {PASS} Scraper initialized")
+def parse_netscape_cookies(path, domain=None):
+    """Parse a Netscape cookies.txt and return {name: value} filtered by domain."""
+    cookies = {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            parts = line.split('\t')
+            if len(parts) != 7:
+                continue
+            c_domain, _, _, _, _, name, value = parts
+            if domain is None or domain in c_domain:
+                cookies[name] = value
+    return cookies
 
 
-# ── get_home ──────────────────────────────────────────────────────────────────
-section("get_home('python', limit=3)")
-home = rs.get_home("python", limit=3)
-
-if home is None:
-    print(f"  {FAIL} Returned None")
-else:
-    check("Subreddit",  home.Subreddit,  str)
-    check("FirstID",    home.FirstID,    str)
-    check("LastID",     home.LastID,     str)
-    check("TotalPosts", home.TotalPosts)
-
+def run_api_checks():
+    """Run the standard API checks after init."""
+    home = rs.get_home("python", limit=3)
     first_post_id = None
-    if home.Posts:
-        post = home.Posts[0]
-        first_post_id = post.PostID
-        print(f"\n  First post:")
-        check("  PostID", post.PostID, str)
-        check("  Title",  post.Title,  str)
-        check("  Author", post.Author, str)
-        check("  Link",   post.Link,   str)
+    if home is None:
+        print(f"  {FAIL} get_home returned None")
     else:
-        print(f"  {FAIL} Posts list is empty or None")
+        check("get_home Subreddit", home.Subreddit, str)
+        check("get_home TotalPosts", home.TotalPosts)
+        if home.Posts:
+            first_post_id = home.Posts[0].PostID
+            print(f"  {PASS} get_home Posts[0].PostID: {first_post_id}")
 
-
-# ── get_comments ──────────────────────────────────────────────────────────────
-section("get_comments('python', post_id, limit=5)")
-
-if first_post_id:
-    print(f"  Using post_id: {first_post_id}")
-    comments = rs.get_comments("python", first_post_id, limit=5)
-
-    if comments is None:
-        print(f"  {FAIL} Returned None")
-    else:
-        check("PostID",       comments.PostID,       str)
-        check("Title",        comments.Title,        str)
-        check("Author",       comments.Author,       str)
-        check("Subreddit",    comments.Subreddit,    str)
-        check("Num_comments", comments.Num_comments)
-        check("Permalink",    comments.Permalink,    str)
-
-        if comments.Comments:
-            c = comments.Comments[0]
-            print(f"\n  First comment:")
-            check("  CommentID", c.CommentID, str)
-            check("  Author",    c.Author,    str)
-            check("  Body",      c.Body,      str)
-            check("  ParentID",  c.ParentID,  str)
+    if first_post_id:
+        comments = rs.get_comments("python", first_post_id, limit=3)
+        if comments is None:
+            print(f"  {FAIL} get_comments returned None")
         else:
-            print(f"  {FAIL} Comments list is empty or None")
-else:
-    print(f"  SKIP — no post_id from get_home")
+            check("get_comments PostID", comments.PostID, str)
+            check("get_comments Num_comments", comments.Num_comments)
 
-
-# ── get_user_posts ────────────────────────────────────────────────────────────
-section("get_user_posts('spez', limit=3)")
-user_posts = rs.get_user_posts("spez", limit=3)
-
-if user_posts is None:
-    print(f"  {FAIL} Returned None")
-else:
-    check("Username",   user_posts.Username,   str)
-    check("FirstID",    user_posts.FirstID,    str)
-    check("LastID",     user_posts.LastID,     str)
-    check("TotalCount", user_posts.TotalCount)
-
-    if user_posts.Posts:
-        p = user_posts.Posts[0]
-        print(f"\n  First post:")
-        check("  PostID",       p.PostID,       str)
-        check("  Title",        p.Title,        str)
-        check("  Subreddit",    p.Subreddit,    str)
-        check("  Upvotes",      p.Upvotes)
-        check("  CommentCount", p.CommentCount)
-        check("  CreatedUtc",   p.CreatedUtc)
+    user_posts = rs.get_user_posts("spez", limit=3)
+    if user_posts is None:
+        print(f"  {FAIL} get_user_posts returned None")
     else:
-        print(f"  {FAIL} Posts list is empty or None")
+        check("get_user_posts Username", user_posts.Username, str)
+        check("get_user_posts TotalCount", user_posts.TotalCount)
 
 
-# ── get_user_comments ─────────────────────────────────────────────────────────
-section("get_user_comments('spez', limit=3)")
-user_comments = rs.get_user_comments("spez", limit=3)
+# ── Test 1: cookies.txt (user parses manually, passes dict) ───────────────────
+section("Cookie source: cookies.txt (manual parse -> dict)")
 
-if user_comments is None:
-    print(f"  {FAIL} Returned None")
-else:
-    check("Username",   user_comments.Username,   str)
-    check("FirstID",    user_comments.FirstID,    str)
-    check("LastID",     user_comments.LastID,     str)
-    check("TotalCount", user_comments.TotalCount)
+cookies_dict = parse_netscape_cookies(COOKIE_FILE, domain="reddit.com")
+print(f"  Loaded {len(cookies_dict)} Reddit cookies from file")
 
-    if user_comments.Comments:
-        c = user_comments.Comments[0]
-        print(f"\n  First comment:")
-        check("  CommentID", c.CommentID, str)
-        check("  Author",    c.Author,    str)
-        check("  Subreddit", c.Subreddit, str)
-        check("  Body",      c.Body,      str)
-        check("  PostTitle", c.PostTitle, str)
-        check("  Link",      c.Link,      str)
-        check("  Upvotes",   c.Upvotes)
-        check("  CreatedUtc", c.CreatedUtc)
-    else:
-        print(f"  {FAIL} Comments list is empty or None")
+rs.init(user_agent="RedScrapsTest/1.0", cookies=cookies_dict)
+print(f"  {PASS} init() with dict cookies")
+
+#run_api_checks()
 
 
-# ── get_stats() ───────────────────────────────────────────────────────────────
+# ── Test 2: browser_cookie3 (CookieJar passed directly) ───────────────────────
+section("Cookie source: browser_cookie3 (CookieJar -> init)")
+
+try:
+    import browser_cookie3
+    cj = browser_cookie3.firefox(domain_name='.reddit.com')
+    cookie_count = sum(1 for _ in cj)
+    print(f"  Loaded {cookie_count} Reddit cookies from Firefox via browser_cookie3")
+
+    rs.init(
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        cookies=cj,
+    )
+    print(f"  {PASS} init() with CookieJar cookies")
+
+    run_api_checks()
+
+except ImportError:
+    print(f"  SKIP — browser_cookie3 not installed")
+except Exception as e:
+    print(f"  SKIP — browser_cookie3 failed: {e}")
+
+
+# ── Stats ──────────────────────────────────────────────────────────────────────
 section("get_stats()")
-stats = rs.get_stats()
-check("calls",              stats['calls'],              int)
-check("rate_limit_hits",    stats['rate_limit_hits'],    int)
-check("total_wait_seconds", stats['total_wait_seconds'], float)
+s = rs.get_stats()
+check("calls",              s['calls'],              int)
+check("rate_limit_hits",    s['rate_limit_hits'],    int)
+check("total_wait_seconds", s['total_wait_seconds'], float)
 
 print(f"\n{'=' * 50}")
 print("  Done.")

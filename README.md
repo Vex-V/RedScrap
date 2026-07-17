@@ -31,12 +31,50 @@ pip install redscrapslib
 
 ## Quick Start
 
+Reddit requires authenticated requests — unauthenticated scraping gets rate-limited almost immediately. You must pass your Reddit session cookies to `init()`.
+
+**Option A — export a `cookies.txt` file** from your browser (e.g. using the [Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) extension):
+
 ```python
 import RedScrapsLib as rs
 
-# Must be called once before anything else
-rs.init(user_agent="MyBot/1.0")
+def parse_netscape_cookies(path, domain=None):
+    cookies = {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            parts = line.split('\t')
+            if len(parts) != 7:
+                continue
+            c_domain, _, _, _, _, name, value = parts
+            if domain is None or domain in c_domain:
+                cookies[name] = value
+    return cookies
 
+cookies = parse_netscape_cookies("cookies.txt", domain="reddit.com")
+rs.init(user_agent="MyBot/1.0", cookies=cookies)
+```
+
+**Option B — load directly from your browser** with [`browser_cookie3`](https://github.com/borisbabic/browser_cookie3) (`pip install browser_cookie3`):
+
+```python
+import RedScrapsLib as rs
+import browser_cookie3
+
+cj = browser_cookie3.firefox(domain_name='.reddit.com')
+# cj = browser_cookie3.chrome(domain_name='.reddit.com')
+
+rs.init(
+    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    cookies=cj,
+)
+```
+
+Once initialised, all four scrape functions work the same way:
+
+```python
 # Fetch posts from a subreddit
 posts = rs.get_home("python", limit=10)
 for post in posts.Posts:
@@ -95,9 +133,64 @@ print(rs.get_stats())
 
 ---
 
+## Cookies / Authentication
+
+Reddit may rate-limit or restrict unauthenticated requests more aggressively. Passing your Reddit session cookies lets the library make requests as a logged-in user, which significantly reduces rate limiting.
+
+### Option 1 — From a cookies.txt file
+
+Export your browser cookies in Netscape format (e.g. using the [Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) extension), then parse and pass them:
+
+```python
+def parse_netscape_cookies(path, domain=None):
+    cookies = {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            parts = line.split('\t')
+            if len(parts) != 7:
+                continue
+            c_domain, _, _, _, _, name, value = parts
+            if domain is None or domain in c_domain:
+                cookies[name] = value
+    return cookies
+
+cookies = parse_netscape_cookies("cookies.txt", domain="reddit.com")
+rs.init(user_agent="MyBot/1.0", cookies=cookies)
+```
+
+### Option 2 — From your browser via `browser_cookie3`
+
+[`browser_cookie3`](https://github.com/borisbabic/browser_cookie3) reads cookies directly from your installed browser without needing to export a file:
+
+```bash
+pip install browser_cookie3
+```
+
+```python
+import browser_cookie3
+
+# Firefox
+cj = browser_cookie3.firefox(domain_name='.reddit.com')
+
+# Chrome
+# cj = browser_cookie3.chrome(domain_name='.reddit.com')
+
+rs.init(
+    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    cookies=cj,
+)
+```
+
+Both options accept the same `cookies` parameter — a plain `dict` or any `CookieJar`-compatible object.
+
+---
+
 ## API Reference
 
-### `init(user_agent=None, debug=False)`
+### `init(user_agent=None, debug=False, cookies=None)`
 
 Initialises the scraper. Must be called once before any other function.
 
@@ -105,6 +198,7 @@ Initialises the scraper. Must be called once before any other function.
 |---|---|---|---|
 | `user_agent` | `str \| None` | `None` | Custom User-Agent string sent with every request. Defaults to `"RedScrapsBot"` |
 | `debug` | `bool` | `False` | Prints step-by-step logs for each request when `True` |
+| `cookies` | `dict[str, str] \| CookieJar \| None` | `None` | Cookies to attach to every request. Accepts a plain `{name: value}` dict or a `CookieJar` (e.g. from `browser_cookie3`) |
 
 ---
 

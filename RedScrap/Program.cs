@@ -15,16 +15,21 @@ public class Scraper
     private readonly bool _debug;
 
 
-    public Scraper(string? userAgent = null, bool? debug = false)
+    public Scraper(string? userAgent = null, bool? debug = false, Dictionary<string, string>? cookies = null)
     {
         _debug = debug ?? false;
 
-
         userAgent ??= "RedScrapsBot";
 
-        _client = new HttpClient();
+        var handler = new HttpClientHandler { UseCookies = false };
+        _client = new HttpClient(handler);
         _client.DefaultRequestHeaders.Add("User-Agent", userAgent);
 
+        if (cookies != null && cookies.Count > 0)
+        {
+            string cookieHeader = string.Join("; ", cookies.Select(kv => $"{kv.Key}={kv.Value}"));
+            _client.DefaultRequestHeaders.Add("Cookie", cookieHeader);
+        }
 
         _options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     }
@@ -255,11 +260,31 @@ public class Scraper
 
 class Program
 {
-    
+    private static Dictionary<string, string> LoadCookiesFromFile(string path)
+    {
+        var cookies = new Dictionary<string, string>();
+        foreach (var line in File.ReadLines(path))
+        {
+            if (line.StartsWith('#') || string.IsNullOrWhiteSpace(line)) continue;
+            var parts = line.Split('\t');
+            if (parts.Length < 7) continue;
+            if (parts[0].Contains("reddit.com"))
+                cookies[parts[5]] = parts[6];
+        }
+        return cookies;
+    }
+
     public static async Task Main(string[] args)
     {
         /*
-        Scraper scraper = new Scraper(userAgent: "RedScrapsTestBot/1.0", debug: true);
+        Dictionary<string, string>? cookies = null;
+        if (File.Exists("cookies.txt"))
+        {
+            cookies = LoadCookiesFromFile("cookies.txt");
+            Console.WriteLine($"Loaded {cookies.Count} Reddit cookies from cookies.txt");
+        }
+
+        Scraper scraper = new Scraper(userAgent: "RedScrapsTestBot/1.0", debug: true, cookies: cookies);
 
         Console.WriteLine("\n==================================================");
         Console.WriteLine("TEST 1: ScrapHome (Subreddit: csharp)");
@@ -389,8 +414,10 @@ class Program
             Console.WriteLine("Failed to fetch User Comments data.");
         }
         Console.WriteLine("\nAll tests completed.");
-        */
+        
         await Task.CompletedTask;
+        */
     }
+    
     
 }

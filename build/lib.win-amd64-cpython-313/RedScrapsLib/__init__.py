@@ -26,6 +26,8 @@ if not os.path.exists(dll_path):
     )
 
 from System.Reflection import Assembly  # type: ignore[import]
+from System.Collections.Generic import Dictionary  # type: ignore[import]
+from System import String  # type: ignore[import]
 Assembly.LoadFrom(dll_path)
 
 try:
@@ -100,10 +102,33 @@ def _call_with_retry(label: str, task_fn):
 # Public API
 # ----------------------------
 
-def init(user_agent=None, debug=False):
-    """Initialize the Scraper instance. Must be called before any other function."""
+def _cookies_to_dict(cookies) -> dict:
+    """Convert dict or CookieJar (browser_cookie3) to a plain {name: value} dict."""
+    if isinstance(cookies, dict):
+        return {k: v for k, v in cookies.items() if v is not None}
+    # CookieJar / RequestsCookieJar — iterate cookie objects
+    return {c.name: c.value for c in cookies if c.value is not None}
+
+
+def init(user_agent=None, debug=False, cookies=None):
+    """Initialize the Scraper instance. Must be called before any other function.
+
+    Args:
+        user_agent: Custom User-Agent string. Defaults to "RedScrapsBot".
+        debug:      Print step-by-step request logs when True.
+        cookies:    Optional cookies to send with every request.
+                    Accepts a plain dict {name: value} or a CookieJar
+                    (e.g. from browser_cookie3).
+    """
     global _scraper_instance
-    _scraper_instance = Scraper(user_agent, debug)
+    if cookies:
+        cookie_dict = _cookies_to_dict(cookies)
+        net_cookies = Dictionary[String, String]()
+        for k, v in cookie_dict.items():
+            net_cookies[String(k)] = String(v)
+        _scraper_instance = Scraper(user_agent, debug, net_cookies)
+    else:
+        _scraper_instance = Scraper(user_agent, debug)
 
 
 def get_stats() -> dict:
